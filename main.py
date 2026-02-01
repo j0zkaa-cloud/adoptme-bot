@@ -16,7 +16,7 @@ from threading import Thread
 print("⏳ [SYSTEM] Starting Bot (Memory Optimized)...")
 
 # 👇 SEM VLOŽ TOKEN 👇
-TOKEN = "MTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GLl1sv.fsb39JgJYus0X2J3gezgHJvCxnrcaBU4YBOGEQ"
+TOKEN = "MTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GvE569.2ZV7fRKlTxQ7eTAjeAO6Opikn2uccosTD6oUCI"
 
 if TOKEN == "SEM_VLOZ_TVUJ_TOKEN" or TOKEN == "":
     print("⛔ [ERROR] Missing Token!")
