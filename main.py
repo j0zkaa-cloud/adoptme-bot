@@ -9,15 +9,15 @@ import datetime
 import re
 
 # ==============================================================================
-# ⚙️ KONFIGURACE
+# 🚀 TURBO EDITION (NO IMAGES)
 # ==============================================================================
-print("⏳ [SYSTEM] Starting Adopt Me Bot (Clean & Stable)...")
+print("⏳ [SYSTEM] Starting TURBO Bot...")
 
 # 👇 SEM VLOŽ TOKEN 👇
-TOKEN = "MTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GYkDdU.GueF_97-eEzocXLUBGgvsZXAxuuC0SdVSfBCzA"
+TOKEN = "SMTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GYkDdU.GueF_97-eEzocXLUBGgvsZXAxuuC0SdVSfBCzA"
 
 if TOKEN == "SEM_VLOZ_TVUJ_TOKEN" or TOKEN == "":
-    print("⛔ [ERROR] Missing Token in main.py!")
+    print("⛔ [ERROR] Missing Token!")
     exit()
 
 intents = discord.Intents.default()
@@ -41,7 +41,7 @@ CATEGORIES = [
 def save_data(data):
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f: json.dump(data, f, indent=4)
-    except Exception as e: print(f"❌ Save Error: {e}")
+    except: pass
 
 def load_data():
     if not os.path.exists(DATA_FILE): return {}
@@ -52,7 +52,6 @@ def parse_price(price_str):
     except: return 0.0
 
 def calculate_demand(html):
-    """Scan HTML for stars and convert to 1/3, 2/3, 3/3."""
     stars = re.findall(r'[★]', html)
     count = len(stars)
     if count >= 3: return "3/3"
@@ -61,16 +60,17 @@ def calculate_demand(html):
     return "0/3"
 
 # ==============================================================================
-# 🎮 DASHBOARD & BUTTON
+# 🎮 DASHBOARD
 # ==============================================================================
 
 class DashboardView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="🔄 Refresh Values", style=discord.ButtonStyle.primary, custom_id="refresh_btn_clean")
+    @discord.ui.button(label="⚡ Turbo Refresh", style=discord.ButtonStyle.green, custom_id="refresh_btn_turbo")
     async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("⏳ **Updating database...** (~30s)", ephemeral=True)
+        # Okamžitá reakce pro uživatele
+        await interaction.response.send_message("🚀 **Turbo Update Started!** (Wait a sec...)", ephemeral=True)
         await scrape_and_update()
 
 def save_dashboard_config(channel_id, message_id):
@@ -110,30 +110,37 @@ async def update_dashboard_ui(data):
     except: pass
 
 # ==============================================================================
-# 🕷️ SCRAPER
+# 🕷️ TURBO SCRAPER (BLOCKING IMAGES)
 # ==============================================================================
 
 async def scrape_and_update():
-    print("\n🚀 [SCRAPER] Scanning web...")
+    print("\n🚀 [SCRAPER] Scanning (Turbo Mode)...")
     new_data = {}
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        page = await (await browser.new_context(viewport={"width": 1920, "height": 1080})).new_page()
+        context = await browser.new_context(viewport={"width": 1920, "height": 1080})
+        page = await context.new_page()
+
+        # ⚡ HLAVNÍ ZRYCHLENÍ: Blokujeme obrázky, fonty a CSS
+        await page.route("**/*", lambda route: route.abort() 
+            if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
+            else route.continue_())
 
         for cat in CATEGORIES:
             print(f"🌍 {cat['name']}...")
             try:
-                await page.goto(cat['url'], timeout=60000, wait_until="domcontentloaded")
+                await page.goto(cat['url'], timeout=30000, wait_until="domcontentloaded")
                 try: 
-                    await page.wait_for_timeout(1000)
+                    await page.wait_for_timeout(500) # Kratší čekání
                     btn = page.get_by_text("Agree", exact=True).first
                     if await btn.is_visible(): await btn.click()
                 except: pass
 
-                scrolls = 15 if cat['name'] == "Pets" else 5
+                # Rychlejší scroll (méně čekání, protože nejsou obrázky)
+                scrolls = 12 if cat['name'] == "Pets" else 3
                 for _ in range(scrolls):
-                    await page.mouse.wheel(0, 3000)
-                    await page.wait_for_timeout(300)
+                    await page.mouse.wheel(0, 4000)
+                    await page.wait_for_timeout(200) # Kratší pauza
 
                 cards = await page.locator("div:has(h2):has-text('Value')").all()
                 count = 0
@@ -142,8 +149,6 @@ async def scrape_and_update():
                         html = await card.inner_html()
                         title = await card.locator("h2").inner_text()
                         price = await card.locator("xpath=.//span[contains(text(), 'Value')]/following-sibling::span").inner_text()
-                        
-                        # Demand calculation logic
                         demand = calculate_demand(html)
 
                         new_data[title.lower().strip()] = {
@@ -179,7 +184,7 @@ async def setup(ctx):
     if not ctx.author.guild_permissions.administrator: return
     msg = await ctx.send(embed=discord.Embed(title="📊 Initializing...", color=0x95a5a6))
     save_dashboard_config(ctx.channel.id, msg.id)
-    await ctx.send("✅ Ready! Click button to load.", delete_after=10)
+    await ctx.send("✅ Ready! Click button.", delete_after=5)
     await scrape_and_update()
 
 @bot.command(name="value")
@@ -188,7 +193,6 @@ async def val(ctx, *, q: str):
     match = [i for k, i in data.items() if q.lower() in k]
     if match:
         match.sort(key=lambda x: len(x['original_name']))
-        # Zobrazíme výsledky
         top = match[0]
         embed = discord.Embed(title=top['original_name'], color=0x2ECC71)
         embed.add_field(name="💎 Value", value=f"**{top['price']}**", inline=True)
