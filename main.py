@@ -16,7 +16,7 @@ from threading import Thread
 print("⏳ [SYSTEM] Starting TURBO Bot with Web Server...")
 
 # 👇 SEM VLOŽ TOKEN 👇
-TOKEN = "SEM_VLOZ_TVUJ_TOKEN"
+TOKEN = "MTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GYkDdU.GueF_97-eEzocXLUBGgvsZXAxuuC0SdVSfBCzA"
 
 if TOKEN == "SEM_VLOZ_TVUJ_TOKEN" or TOKEN == "":
     print("⛔ [ERROR] Missing Token!")
