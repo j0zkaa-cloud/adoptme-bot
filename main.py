@@ -7,14 +7,16 @@ from playwright.async_api import async_playwright
 import os
 import datetime
 import re
+from flask import Flask
+from threading import Thread
 
 # ==============================================================================
-# 🚀 TURBO EDITION (NO IMAGES)
+# ⚙️ KONFIGURACE
 # ==============================================================================
-print("⏳ [SYSTEM] Starting TURBO Bot...")
+print("⏳ [SYSTEM] Starting TURBO Bot with Web Server...")
 
 # 👇 SEM VLOŽ TOKEN 👇
-TOKEN = "SMTQ2NTQ1MzI0NDQzOTMzNTAyNQ.GYkDdU.GueF_97-eEzocXLUBGgvsZXAxuuC0SdVSfBCzA"
+TOKEN = "SEM_VLOZ_TVUJ_TOKEN"
 
 if TOKEN == "SEM_VLOZ_TVUJ_TOKEN" or TOKEN == "":
     print("⛔ [ERROR] Missing Token!")
@@ -23,6 +25,26 @@ if TOKEN == "SEM_VLOZ_TVUJ_TOKEN" or TOKEN == "":
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+
+# ==============================================================================
+# 🌐 FALEŠNÝ WEB SERVER (ABY TO RENDER NEVYPNUL)
+# ==============================================================================
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "I am alive! Bot is running."
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# ==============================================================================
+# 🧠 ZBYTEK BOTA (TURBO)
+# ==============================================================================
 
 DATA_FILE = "values_database.json"
 DASHBOARD_FILE = "dashboard_config.json"
@@ -33,10 +55,6 @@ CATEGORIES = [
     {"name": "Vehicles", "url": "https://amvgg.com/values/vehicles"},
     {"name": "Food", "url": "https://amvgg.com/values/food"},
 ]
-
-# ==============================================================================
-# 🧠 LOGIKA
-# ==============================================================================
 
 def save_data(data):
     try:
@@ -59,18 +77,13 @@ def calculate_demand(html):
     if count == 1: return "1/3"
     return "0/3"
 
-# ==============================================================================
-# 🎮 DASHBOARD
-# ==============================================================================
-
 class DashboardView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="⚡ Turbo Refresh", style=discord.ButtonStyle.green, custom_id="refresh_btn_turbo")
     async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Okamžitá reakce pro uživatele
-        await interaction.response.send_message("🚀 **Turbo Update Started!** (Wait a sec...)", ephemeral=True)
+        await interaction.response.send_message("🚀 **Turbo Update Started!**", ephemeral=True)
         await scrape_and_update()
 
 def save_dashboard_config(channel_id, message_id):
@@ -109,10 +122,6 @@ async def update_dashboard_ui(data):
             print("✅ [DASHBOARD] Updated.")
     except: pass
 
-# ==============================================================================
-# 🕷️ TURBO SCRAPER (BLOCKING IMAGES)
-# ==============================================================================
-
 async def scrape_and_update():
     print("\n🚀 [SCRAPER] Scanning (Turbo Mode)...")
     new_data = {}
@@ -121,7 +130,6 @@ async def scrape_and_update():
         context = await browser.new_context(viewport={"width": 1920, "height": 1080})
         page = await context.new_page()
 
-        # ⚡ HLAVNÍ ZRYCHLENÍ: Blokujeme obrázky, fonty a CSS
         await page.route("**/*", lambda route: route.abort() 
             if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
             else route.continue_())
@@ -131,16 +139,15 @@ async def scrape_and_update():
             try:
                 await page.goto(cat['url'], timeout=30000, wait_until="domcontentloaded")
                 try: 
-                    await page.wait_for_timeout(500) # Kratší čekání
+                    await page.wait_for_timeout(500)
                     btn = page.get_by_text("Agree", exact=True).first
                     if await btn.is_visible(): await btn.click()
                 except: pass
 
-                # Rychlejší scroll (méně čekání, protože nejsou obrázky)
                 scrolls = 12 if cat['name'] == "Pets" else 3
                 for _ in range(scrolls):
                     await page.mouse.wheel(0, 4000)
-                    await page.wait_for_timeout(200) # Kratší pauza
+                    await page.wait_for_timeout(200)
 
                 cards = await page.locator("div:has(h2):has-text('Value')").all()
                 count = 0
@@ -165,10 +172,6 @@ async def scrape_and_update():
     save_data(new_data)
     await update_dashboard_ui(new_data)
     return new_data
-
-# ==============================================================================
-# 🤖 COMMANDS
-# ==============================================================================
 
 @tasks.loop(hours=6)
 async def auto_update(): await scrape_and_update()
@@ -202,5 +205,8 @@ async def val(ctx, *, q: str):
     else: await ctx.send(f"❌ '{q}' not found.")
 
 if __name__ == "__main__":
-    try: bot.run(TOKEN)
+    try:
+        # TADY JE TA ZMĚNA: Zapneme "web" a až pak bota
+        keep_alive()
+        bot.run(TOKEN)
     except Exception as e: print(f"CRITICAL: {e}")
